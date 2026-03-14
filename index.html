@@ -69,22 +69,28 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 .fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
 .fi:focus{border-color:var(--accent)}
 .fi::placeholder{color:var(--text3)}
+/* Auto-expanding textarea */
+.fi-area{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;resize:none;min-height:52px;overflow:hidden;line-height:1.5}
+.fi-area:focus{border-color:var(--accent)}
+.fi-area::placeholder{color:var(--text3)}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px;margin-bottom:14px}
-.f4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:0 20px;margin-bottom:14px}
 .fa-row{padding:10px 20px 16px;display:flex;gap:10px}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:transform .15s;letter-spacing:.01em}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:transform .15s,opacity .2s;letter-spacing:.01em}
 .btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.4;pointer-events:none}
 .btn-p{background:var(--accent);color:#0a0a0f;flex:1}
 .btn-s{background:var(--bg3);color:var(--text2);border:1px solid var(--border);flex:1}
+.btn-ai{background:rgba(96,200,240,.12);color:var(--accent2);border:1px solid rgba(96,200,240,.3);width:100%}
+.btn-ai-re{background:rgba(96,200,240,.06);color:var(--accent2);border:1px solid rgba(96,200,240,.2);width:100%;font-size:13px;padding:10px 14px}
 .btn-d{background:rgba(240,112,112,.1);color:var(--red);border:1px solid rgba(240,112,112,.25)}
 .btn-sm{padding:9px 16px;font-size:13px;border-radius:8px}
 .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 20px;margin-bottom:14px}
 .cb{padding:10px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
 .cb.active{background:rgba(200,240,96,.1);border-color:var(--accent);color:var(--accent)}
 .ci{font-size:18px}
-.pd{width:100%;height:140px;border-radius:var(--r-sm);background:var(--bg3);border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);cursor:pointer;transition:border-color .2s}
+.pd{width:100%;height:130px;border-radius:var(--r-sm);background:var(--bg3);border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);cursor:pointer;transition:border-color .2s}
 .pd:active{border-color:var(--accent)}
-.pv{width:100%;height:140px;border-radius:var(--r-sm);object-fit:cover;display:block;border:1px solid var(--border)}
+.pv{width:100%;height:130px;border-radius:var(--r-sm);object-fit:cover;display:block;border:1px solid var(--border);cursor:pointer}
 .ai-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(96,200,240,.1);color:var(--accent2);border:1px solid rgba(96,200,240,.25)}
 .spin{width:20px;height:20px;border:2.5px solid rgba(200,240,96,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -117,7 +123,6 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 .tab-bar{display:flex;background:var(--bg3);border-radius:var(--r-sm);padding:3px;margin:0 20px 16px}
 .tab-btn{flex:1;padding:8px;border:none;background:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border-radius:8px;transition:all .2s}
 .tab-btn.active{background:var(--card2);color:var(--text)}
-/* Macro pill */
 .mpill{display:inline-flex;flex-direction:column;align-items:center;background:var(--bg3);border-radius:10px;padding:10px 8px;min-width:0;flex:1}
 .mpill-val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
 .mpill-lbl{font-size:9px;color:var(--text3);margin-top:2px;letter-spacing:.04em;text-transform:uppercase}
@@ -134,7 +139,6 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
       </div>
     </div>
     <div style="padding:0 20px 14px" class="fu">
-      <!-- Rings -->
       <div class="card" style="display:flex;justify-content:space-around;align-items:center;padding:22px 8px">
         <div style="text-align:center">
           <div class="rw"><svg width="108" height="108" viewBox="0 0 108 108"><circle class="rbg" cx="54" cy="54" r="45"/><circle class="rfg" id="r-cal" cx="54" cy="54" r="45" stroke="var(--accent)" stroke-dasharray="283" stroke-dashoffset="283"/></svg>
@@ -147,7 +151,6 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
           <div class="lbl" style="margin-top:7px">Protein</div><div style="font-size:11px;color:var(--text2);margin-top:2px" id="rem-prot">— left</div>
         </div>
       </div>
-      <!-- Progress bars -->
       <div class="card" style="margin-top:10px">
         <div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:500">Calories</span><span style="font-size:12px;color:var(--text2)" id="lbl-cal"></span></div>
@@ -158,7 +161,6 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
           <div class="bt"><div class="bf" id="bar-prot" style="background:var(--accent2);width:0%"></div></div>
         </div>
       </div>
-      <!-- Carbs + Fibre pills -->
       <div style="display:flex;gap:8px;margin-top:10px">
         <div class="mpill"><div class="mpill-val" id="t-carbs" style="color:var(--accent3)">0g</div><div class="mpill-lbl">Carbs</div></div>
         <div class="mpill"><div class="mpill-val" id="t-fibre" style="color:var(--accent4)">0g</div><div class="mpill-lbl">Fibre</div></div>
@@ -208,13 +210,13 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
   </nav>
 </div>
 
-<!-- ADD / EDIT MEAL SHEET -->
+<!-- ADD / EDIT SHEET -->
 <div class="ov" id="ov-add" onclick="closeAdd()"></div>
 <div class="sh" id="sh-add">
   <div class="sh-handle"></div>
   <div class="sh-title" id="add-title">Log a Meal</div>
 
-  <!-- Favourites (add mode only) -->
+  <!-- Favourites -->
   <div id="favs-wrap" style="display:none;padding:0 20px;margin-bottom:14px">
     <div class="lbl" style="margin-bottom:8px">Quick Add — Favourites</div>
     <div id="favs-list" style="display:flex;flex-direction:column;gap:7px"></div>
@@ -223,35 +225,52 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 
   <!-- Photo -->
   <div class="fg-wrap">
-    <div class="fl">Photo</div>
+    <div class="fl">Photo <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
     <div id="photo-drop" class="pd" onclick="showPhotoOpts()">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       <span style="font-size:13px">Take photo or choose from library</span>
     </div>
-    <img id="photo-img" class="pv" style="display:none" alt="Meal photo">
+    <div id="photo-preview-wrap" style="display:none;position:relative">
+      <img id="photo-img" class="pv" alt="Meal photo" onclick="showPhotoOpts()">
+      <button onclick="clearPhoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:16px;line-height:1">×</button>
+    </div>
     <input type="file" id="photo-camera" accept="image/*" capture="environment" style="display:none" onchange="onPhoto(event)">
     <input type="file" id="photo-library" accept="image/*" style="display:none" onchange="onPhoto(event)">
   </div>
 
-  <!-- Description / hint — always visible -->
+  <!-- Description -->
   <div class="fg-wrap">
-    <label class="fl">Describe Your Meal <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(helps AI accuracy)</span></label>
-    <input class="fi" id="f-hint" placeholder="e.g. cheeseburger and fries, large portion" type="text" autocomplete="off">
+    <label class="fl">Describe Your Meal <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — improves AI accuracy)</span></label>
+    <textarea class="fi-area" id="f-hint" placeholder="e.g. cheeseburger with fries and mayo, large portion" oninput="autoResize(this)" rows="2"></textarea>
   </div>
 
-  <!-- AI bar -->
+  <!-- AI Analyse button -->
+  <div style="padding:0 20px;margin-bottom:14px">
+    <button class="btn btn-ai" id="ai-analyse-btn" onclick="triggerAI()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Analyse with AI
+    </button>
+  </div>
+
+  <!-- AI loading -->
   <div id="ai-bar" style="display:none;margin:0 20px 14px;padding:12px 14px;background:var(--bg3);border-radius:var(--r-sm);border:1px solid var(--border)">
     <div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><div style="font-size:13px;color:var(--text2)">Analysing your meal…</div></div>
   </div>
+
+  <!-- AI result -->
   <div id="ai-ok" style="display:none;margin:0 20px 14px;padding:10px 14px;background:rgba(96,200,240,.07);border-radius:var(--r-sm);border:1px solid rgba(96,200,240,.2)">
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <span class="ai-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>AI Suggestion</span>
       <span id="ai-conf" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px"></span>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:5px">Review and confirm before saving.</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Review fields below — edit anything before saving.</div>
+    <button class="btn btn-ai-re" onclick="triggerAI()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refine description &amp; re-analyse
+    </button>
   </div>
 
-  <!-- Name -->
+  <!-- Meal name -->
   <div class="fg-wrap"><label class="fl">Meal Name</label><input class="fi" id="f-name" placeholder="e.g. Cheeseburger and fries" type="text" autocomplete="off" oninput="updateFlag()"></div>
 
   <!-- Calories + Protein -->
@@ -325,7 +344,7 @@ const db={
   },
   saveSett(s){localStorage.setItem(SK,JSON.stringify(s))},
   add(m){const a=db.meals();a.push(m);db.save(a)},
-  update(id,changes){const a=db.meals();const i=a.findIndex(m=>m.id===id);if(i>=0){a[i]={...a[i],...changes};db.save(a)}},
+  update(id,ch){const a=db.meals();const i=a.findIndex(m=>m.id===id);if(i>=0){a[i]={...a[i],...ch};db.save(a)}},
   del(id){db.save(db.meals().filter(m=>m.id!==id))}
 };
 
@@ -337,6 +356,8 @@ const fmtTime=iso=>new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minu
 const fmtDate=iso=>new Date(iso).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 const catEmo=c=>({breakfast:'🌅',lunch:'☀️',dinner:'🌙',snack:'🍎'}[c]||'🍽️');
 const n1=v=>Math.round((Number(v)||0)*10)/10;
+
+function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
 
 function getFlag(cal,prot){
   const s=db.sett();
@@ -466,8 +487,8 @@ function renderInsights(period){
     let bars='';
     dayData.forEach(d=>{
       const pct=Math.min(d[key]/maxV*100,100);
-      const c=target&&d[key]>target?'var(--red)':d[key]>0?col:'var(--bg3)';
-      bars+=`<div class="bcc"><div class="bcv">${d[key]>0&&days<=7?Math.round(d[key]):''}</div><div style="flex:1;display:flex;align-items:flex-end;width:100%"><div style="width:100%;height:${Math.max(pct,d[key]>0?2:1)}%;background:${c};border-radius:3px 3px 0 0;transition:height .6s"></div></div><div class="bcl">${days<=7?d.lbl:d.d.getDate()}</div></div>`;
+      const clr=target&&d[key]>target?'var(--red)':d[key]>0?col:'var(--bg3)';
+      bars+=`<div class="bcc"><div class="bcv">${d[key]>0&&days<=7?Math.round(d[key]):''}</div><div style="flex:1;display:flex;align-items:flex-end;width:100%"><div style="width:100%;height:${Math.max(pct,d[key]>0?2:1)}%;background:${clr};border-radius:3px 3px 0 0;transition:height .6s"></div></div><div class="bcl">${days<=7?d.lbl:d.d.getDate()}</div></div>`;
     });
     c.innerHTML+=`<div class="card" style="margin-bottom:12px"><div class="lbl" style="margin-bottom:10px">${label}</div><div class="bc">${bars}</div></div>`;
   };
@@ -506,32 +527,14 @@ function renderSettings(){
   </div>
   <div style="padding:0 0 6px"><div class="lbl" style="padding:0 4px">Mounjaro Flag Thresholds</div></div>
   <div class="ss">
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:13px;font-weight:500;color:var(--green)">🟢 Green — max calories</span>
-      <input class="fi" id="si-gcal" type="number" inputmode="numeric" value="${s.greenMaxCal}" onchange="saveSett()" style="font-size:14px;padding:10px 12px">
-    </div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:13px;font-weight:500;color:var(--green)">🟢 Green — min protein (g)</span>
-      <input class="fi" id="si-gprot" type="number" inputmode="numeric" value="${s.greenMinProt}" onchange="saveSett()" style="font-size:14px;padding:10px 12px">
-    </div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:13px;font-weight:500;color:var(--red)">🔴 Red — min calories (with low protein)</span>
-      <input class="fi" id="si-rcal" type="number" inputmode="numeric" value="${s.redMinCal}" onchange="saveSett()" style="font-size:14px;padding:10px 12px">
-    </div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:13px;font-weight:500;color:var(--red)">🔴 Red — max protein always red below (g)</span>
-      <input class="fi" id="si-rprot" type="number" inputmode="numeric" value="${s.redMaxProt}" onchange="saveSett()" style="font-size:14px;padding:10px 12px">
-    </div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--green)">🟢 Green — max calories</span><input class="fi" id="si-gcal" type="number" inputmode="numeric" value="${s.greenMaxCal}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--green)">🟢 Green — min protein (g)</span><input class="fi" id="si-gprot" type="number" inputmode="numeric" value="${s.greenMinProt}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--red)">🔴 Red — min calories (with low protein)</span><input class="fi" id="si-rcal" type="number" inputmode="numeric" value="${s.redMinCal}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--red)">🔴 Red — always red below this protein (g)</span><input class="fi" id="si-rprot" type="number" inputmode="numeric" value="${s.redMaxProt}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
   </div>
   <div class="ss">
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px">
-      <span style="font-size:15px;font-weight:500">AI Proxy URL</span>
-      <input class="fi" id="si-proxy" type="url" placeholder="https://your-worker.workers.dev" value="${esc(s.proxyUrl||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px">
-    </div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px">
-      <span style="font-size:15px;font-weight:500">App Token</span>
-      <input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px">
-    </div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">AI Proxy URL</span><input class="fi" id="si-proxy" type="url" placeholder="https://your-worker.workers.dev" value="${esc(s.proxyUrl||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">App Token</span><input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
   </div>
   <div class="ss">
     <div class="sr" style="cursor:pointer" onclick="exportCSV()"><span style="font-size:15px;font-weight:500">Export as CSV</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
@@ -542,7 +545,7 @@ function renderSettings(){
     <div class="sr" style="cursor:pointer" onclick="clearData()"><span style="color:var(--red);font-size:15px;font-weight:500">Delete All Data</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
   </div>
   <div style="text-align:center;padding:22px 0 8px">
-    <div style="font-size:12px;color:var(--text3)">NutriLog v3 · All data stored on your device</div>
+    <div style="font-size:12px;color:var(--text3)">NutriLog v4 · All data stored on your device</div>
     <div style="font-size:11px;color:var(--text3);margin-top:3px">No account · No tracking · No ads</div>
   </div>`;
 }
@@ -570,10 +573,13 @@ function openAdd(){
   $('add-title').textContent='Log a Meal';
   $('save-lbl').textContent='Save Meal';
   $('f-name').value='';$('f-cal').value='';$('f-prot').value='';
-  $('f-carbs').value='';$('f-fibre').value='';$('f-hint').value='';
-  $('photo-drop').style.display='flex';$('photo-img').style.display='none';
+  $('f-carbs').value='';$('f-fibre').value='';
+  $('f-hint').value='';$('f-hint').style.height='auto';
+  $('photo-drop').style.display='flex';
+  $('photo-preview-wrap').style.display='none';
   $('ai-bar').style.display='none';$('ai-ok').style.display='none';
   $('flag-prev').style.display='none';$('save-btn').disabled=false;
+  $('ai-analyse-btn').style.display='flex';
   document.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
   const h=new Date().getHours();
   pickCat(h<10?'breakfast':h<14?'lunch':h<19?'dinner':'snack');
@@ -603,14 +609,21 @@ function openEdit(id){
   $('f-prot').value=m.protein||'';
   $('f-carbs').value=m.carbs||'';
   $('f-fibre').value=m.fibre||'';
-  $('f-hint').value='';
+  $('f-hint').value='';$('f-hint').style.height='auto';
   $('favs-wrap').style.display='none';
   $('ai-bar').style.display='none';$('ai-ok').style.display='none';
+  $('ai-analyse-btn').style.display='flex';
   $('save-btn').disabled=false;
-  if(m.photo){$('photo-img').src=m.photo;$('photo-img').style.display='block';$('photo-drop').style.display='none';}
-  else{$('photo-drop').style.display='flex';$('photo-img').style.display='none';}
+  if(m.photo){
+    $('photo-img').src=m.photo;
+    $('photo-preview-wrap').style.display='block';
+    $('photo-drop').style.display='none';
+  } else {
+    $('photo-drop').style.display='flex';
+    $('photo-preview-wrap').style.display='none';
+  }
   document.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
-  if(selCat) pickCat(selCat);
+  if(selCat)pickCat(selCat);
   updateFlag();
   setTimeout(()=>openSh('add'),100);
 }
@@ -623,6 +636,11 @@ function showPhotoOpts(){openSh('photo');}
 function closePhotoOpts(){closeSh('photo');}
 function useCamera(){closeSh('photo');setTimeout(()=>$('photo-camera').click(),350);}
 function useLibrary(){closeSh('photo');setTimeout(()=>$('photo-library').click(),350);}
+function clearPhoto(){
+  photoData=null;
+  $('photo-drop').style.display='flex';
+  $('photo-preview-wrap').style.display='none';
+}
 
 async function onPhoto(e){
   const file=e.target.files[0];if(!file)return;
@@ -630,15 +648,12 @@ async function onPhoto(e){
   const reader=new FileReader();
   reader.onload=async ev=>{
     const full=ev.target.result;
-    $('photo-img').src=full;$('photo-img').style.display='block';$('photo-drop').style.display='none';
+    $('photo-img').src=full;
+    $('photo-preview-wrap').style.display='block';
+    $('photo-drop').style.display='none';
     const compressed=await compressImg(full,1024,.82);
     photoData=compressed;
-    if(editingId)return; // don't auto-AI on edit
-    const sett=db.sett();
-    const url=(sett.proxyUrl||PROXY_URL).trim();
-    const token=(sett.appToken||APP_TOKEN).trim();
-    if(!url||url==='YOUR_WORKER_URL_HERE'){toast('⚠️ Add your Worker URL in Settings to enable AI');return;}
-    await runAI(compressed,url,token);
+    toast('Photo added — tap Analyse with AI');
   };
   reader.readAsDataURL(file);
 }
@@ -657,14 +672,27 @@ async function compressImg(src,maxPx,q){
   });
 }
 
-async function runAI(img,url,token){
-  $('ai-bar').style.display='block';$('ai-ok').style.display='none';$('save-btn').disabled=true;
+async function triggerAI(){
+  const hint=$('f-hint').value.trim();
+  const sett=db.sett();
+  const url=(sett.proxyUrl||PROXY_URL).trim();
+  const token=(sett.appToken||APP_TOKEN).trim();
+  if(!url||url==='YOUR_WORKER_URL_HERE'){toast('⚠️ Add your Worker URL in Settings first');return;}
+  if(!photoData&&!hint){toast('Add a photo or description first');return;}
+  await runAI(photoData,hint,url,token);
+}
+
+async function runAI(img,hint,url,token){
+  $('ai-bar').style.display='block';$('ai-ok').style.display='none';
+  $('ai-analyse-btn').style.display='none';$('save-btn').disabled=true;
   try{
-    const hint=$('f-hint').value.trim();
+    const body={};
+    if(img) body.image_b64=img.split(',')[1];
+    if(hint) body.hint=hint;
     const r=await fetch(url,{
       method:'POST',
       headers:{'Content-Type':'application/json','X-App-Token':token},
-      body:JSON.stringify({image_b64:img.split(',')[1],hint:hint||undefined})
+      body:JSON.stringify(body)
     });
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
@@ -672,17 +700,24 @@ async function runAI(img,url,token){
       $('f-name').value=d.meal_name||'';
       $('f-cal').value=d.calories||'';
       $('f-prot').value=d.protein_g||'';
-      if(d.carbs_g) $('f-carbs').value=d.carbs_g;
-      if(d.fibre_g) $('f-fibre').value=d.fibre_g;
+      if(d.carbs_g)$('f-carbs').value=d.carbs_g;
+      if(d.fibre_g)$('f-fibre').value=d.fibre_g;
       aiDone=true;
       const cm={high:'High confidence',medium:'Medium confidence',low:'Low confidence — double-check'};
       const cc={high:'cd cd-h',medium:'cd cd-m',low:'cd cd-l'};
       $('ai-conf').innerHTML=`<span class="${cc[d.confidence]||'cd cd-m'}"></span>${cm[d.confidence]||''}`;
       $('ai-bar').style.display='none';$('ai-ok').style.display='block';
       updateFlag();
-    }else{$('ai-bar').style.display='none';toast('AI couldn\'t identify meal — enter manually');}
-  }catch(err){$('ai-bar').style.display='none';toast('AI unavailable — enter details manually');}
-  finally{$('save-btn').disabled=false;}
+    }else{
+      $('ai-bar').style.display='none';
+      $('ai-analyse-btn').style.display='flex';
+      toast('AI couldn\'t identify meal — enter manually');
+    }
+  }catch(err){
+    $('ai-bar').style.display='none';
+    $('ai-analyse-btn').style.display='flex';
+    toast('AI unavailable — enter details manually');
+  }finally{$('save-btn').disabled=false;}
 }
 
 function updateFlag(){
@@ -704,11 +739,10 @@ function saveMeal(){
   if(!name){toast('Please enter a meal name');return;}
   if(!$('f-cal').value){toast('Please enter calories');return;}
   const f=getFlag(cal,prot);
-
   if(editingId){
     db.update(editingId,{name,calories:cal,protein:prot,carbs,fibre,category:selCat,photo:photoData,mounjaroFlag:f.k});
     closeAdd();toast('✓ Changes saved');
-  } else {
+  }else{
     db.add({id:genId(),name,calories:cal,protein:prot,carbs,fibre,category:selCat,loggedAt:new Date().toISOString(),photo:photoData||null,mounjaroFlag:f.k,aiSuggested:aiDone,source:aiDone?'photo_ai':photoData?'photo_manual':'manual'});
     closeAdd();toast('✓ '+name+' saved');
   }
@@ -740,22 +774,10 @@ function openDet(id){
       <span class="flag ${f.css}" style="flex-shrink:0;margin-left:10px">${f.label}</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-      <div class="card" style="text-align:center;padding:12px 6px">
-        <div class="serif" style="font-size:22px;color:var(--accent)">${(Number(m.calories)||0).toLocaleString()}</div>
-        <div class="lbl" style="margin-top:2px;font-size:9px">kcal</div>
-      </div>
-      <div class="card" style="text-align:center;padding:12px 6px">
-        <div class="serif" style="font-size:22px;color:var(--accent2)">${n1(m.protein)}g</div>
-        <div class="lbl" style="margin-top:2px;font-size:9px">protein</div>
-      </div>
-      <div class="card" style="text-align:center;padding:12px 6px">
-        <div class="serif" style="font-size:22px;color:var(--accent3)">${n1(m.carbs)}g</div>
-        <div class="lbl" style="margin-top:2px;font-size:9px">carbs</div>
-      </div>
-      <div class="card" style="text-align:center;padding:12px 6px">
-        <div class="serif" style="font-size:22px;color:var(--accent4)">${n1(m.fibre)}g</div>
-        <div class="lbl" style="margin-top:2px;font-size:9px">fibre</div>
-      </div>
+      <div class="card" style="text-align:center;padding:12px 6px"><div class="serif" style="font-size:20px;color:var(--accent)">${(Number(m.calories)||0).toLocaleString()}</div><div class="lbl" style="margin-top:2px;font-size:9px">kcal</div></div>
+      <div class="card" style="text-align:center;padding:12px 6px"><div class="serif" style="font-size:20px;color:var(--accent2)">${n1(m.protein)}g</div><div class="lbl" style="margin-top:2px;font-size:9px">protein</div></div>
+      <div class="card" style="text-align:center;padding:12px 6px"><div class="serif" style="font-size:20px;color:var(--accent3)">${n1(m.carbs)}g</div><div class="lbl" style="margin-top:2px;font-size:9px">carbs</div></div>
+      <div class="card" style="text-align:center;padding:12px 6px"><div class="serif" style="font-size:20px;color:var(--accent4)">${n1(m.fibre)}g</div><div class="lbl" style="margin-top:2px;font-size:9px">fibre</div></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
       ${m.category?`<span style="background:var(--bg3);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px">${catEmo(m.category)} ${m.category.charAt(0).toUpperCase()+m.category.slice(1)}</span>`:''}
@@ -795,8 +817,7 @@ function exportCSV(){
     return[d.toLocaleDateString('en-GB'),d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
       `"${(m.name||'').replace(/"/g,'""')}"`,m.calories||0,m.protein||0,m.carbs||0,m.fibre||0,m.category||'',m.mounjaroFlag||'',m.source||''].join(',');
   }).join('\n');
-  dl('nutrilog-export.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows));
-  toast('CSV exported');
+  dl('nutrilog-export.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows));toast('CSV exported');
 }
 function backupData(){
   dl('nutrilog-backup.json','data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({meals:db.meals(),settings:db.sett(),exported:new Date().toISOString()},null,2)));
