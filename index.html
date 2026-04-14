@@ -508,7 +508,7 @@ const DAY_TYPES=[
   {id:'pull',   label:'Pull Day',       kcal:2000,prot:170},
   {id:'cricket',label:'Cricket',        kcal:2000,prot:170},
   {id:'complex',label:'Power Complex',  kcal:2000,prot:170},
-  {id:'rest',   label:'Rest Day',       kcal:1700,prot:160},
+  {id:'rest',   label:'Rest Day',       kcal:1700,prot:150},
 ];
 function dateKey(d){const dt=d instanceof Date?d:new Date(d);return dt.toISOString().slice(0,10);}
 function getDayType(ds){return localStorage.getItem('nl_daytype_'+ds)||'rest';}
