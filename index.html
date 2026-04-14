@@ -147,6 +147,11 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2)}
 .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* Day type picker */
+.daytype-bar{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.daytype-bar::-webkit-scrollbar{display:none}
+.daytype-btn{flex-shrink:0;padding:6px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.daytype-btn.active{background:rgba(200,240,96,.12);border-color:var(--accent);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -156,8 +161,12 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
     <div class="screen-hdr">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div><div class="lbl" id="hdr-date">Today</div><div class="serif" style="font-size:28px;margin-top:1px">Dashboard</div></div>
-        <div style="font-size:28px" id="hdr-emo">🌅</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:22px;line-height:1" id="day-rag-indicator" title=""></div>
+          <div style="font-size:28px" id="hdr-emo">🌅</div>
+        </div>
       </div>
+      <div class="daytype-bar" id="daytype-bar"></div>
     </div>
     <div style="padding:0 20px 14px" class="fu">
       <div class="card" style="display:flex;justify-content:space-around;align-items:center;padding:22px 8px">
@@ -294,10 +303,6 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
     <button class="cb" data-c="dinner" onclick="pickCat('dinner')"><span class="ci">🌙</span>Dinner</button>
     <button class="cb" data-c="snack" onclick="pickCat('snack')"><span class="ci">🍎</span>Snack</button>
   </div>
-  <div id="flag-prev" style="display:none;padding:0 20px;margin-bottom:14px">
-    <div class="fl">Mounjaro Flag</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:4px"><span id="flag-badge" class="flag"></span><span id="flag-why" style="font-size:12px;color:var(--text3)"></span></div>
-  </div>
   <div class="fa-row">
     <button class="btn btn-s" onclick="closeAdd()">Cancel</button>
     <button class="btn btn-p" id="save-btn" onclick="saveMeal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span id="save-lbl">Save Meal</span></button>
@@ -406,8 +411,7 @@ const db={
     }
   },
   sett(){
-    const d={tdee:2000,calTarget:2000,protTarget:145,proxyUrl:'',appToken:'',
-      greenMaxCal:700,greenMinProt:30,redMinCal:1100,redMaxProt:15};
+    const d={tdee:2000,calTarget:2000,protTarget:145,proxyUrl:'',appToken:''};
     try{return{...d,...JSON.parse(localStorage.getItem(SK)||'{}')}}catch(e){return d}
   },
   saveSett(s){localStorage.setItem(SK,JSON.stringify(s))},
@@ -437,15 +441,25 @@ function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'
 
 const CAT_COLORS={breakfast:'var(--accent3)',lunch:'var(--accent)',dinner:'var(--accent2)',snack:'var(--accent4)'};
 
-function getFlag(cal,prot){
-  const s=db.sett();
-  cal=Number(cal)||0;prot=Number(prot)||0;
-  const gmc=s.greenMaxCal||700,gmp=s.greenMinProt||30,rmc=s.redMinCal||1100,rmp=s.redMaxProt||15;
-  if(prot<rmp) return{k:'red',label:'Red',css:'fr',reason:'Very low protein'};
-  if(cal>rmc&&prot<gmp) return{k:'red',label:'Red',css:'fr',reason:'High calorie, low protein'};
-  if(prot>=gmp&&cal<=gmc) return{k:'green',label:'Green',css:'fg',reason:'High protein, on target'};
-  if(prot>=gmp*1.5) return{k:'green',label:'Green',css:'fg',reason:'Excellent protein hit'};
-  return{k:'amber',label:'Amber',css:'fa',reason:'Decent — keep protein up'};
+// ── DAY TYPES ─────────────────────────────────────────────────────
+const DAY_TYPES=[
+  {id:'push',   label:'Push Day',       kcal:2300,prot:180},
+  {id:'spin',   label:'Spin Day',       kcal:2300,prot:180},
+  {id:'pull',   label:'Pull Day',       kcal:2000,prot:170},
+  {id:'cricket',label:'Cricket',        kcal:2000,prot:170},
+  {id:'complex',label:'Power Complex',  kcal:2000,prot:170},
+  {id:'rest',   label:'Rest Day',       kcal:1700,prot:160},
+];
+function dateKey(d){const dt=d instanceof Date?d:new Date(d);return dt.toISOString().slice(0,10);}
+function getDayType(ds){return localStorage.getItem('nl_daytype_'+ds)||'rest';}
+function setDayType(ds,id){localStorage.setItem('nl_daytype_'+ds,id);}
+function getDayTargets(ds){return DAY_TYPES.find(t=>t.id===getDayType(ds))||DAY_TYPES[5];}
+
+function getDayRAG(totC,totP,targets){
+  const ct=targets.kcal,pt=targets.prot;
+  if(totP>=pt&&totC<=ct)           return{k:'green',emoji:'🟢',label:'On Track'};
+  if(totP>=pt*0.85&&totC<=ct*1.15) return{k:'amber',emoji:'🟡',label:'Close'};
+  return{k:'red',emoji:'🔴',label:'Off Track'};
 }
 
 function toast(msg,dur=2400){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur)}
@@ -470,7 +484,8 @@ function switchInsights(p){
 
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function renderToday(){
-  const sett=db.sett();
+  const ds=dateKey(new Date());
+  const targets=getDayTargets(ds);
   const meals=db.meals().filter(m=>new Date(m.loggedAt).toDateString()===todayStr());
   const totC=meals.reduce((s,m)=>s+(Number(m.calories)||0),0);
   const totP=meals.reduce((s,m)=>s+(Number(m.protein)||0),0);
@@ -484,25 +499,35 @@ function renderToday(){
   $('t-carbs').textContent=n1(totCa)+'g';
   $('t-fibre').textContent=n1(totF)+'g';
   $('t-meals').textContent=meals.length;
-  $('r-cal').style.strokeDashoffset=C-C*Math.min(totC/sett.calTarget,1);
-  $('r-prot').style.strokeDashoffset=C-C*Math.min(totP/sett.protTarget,1);
-  const rc=sett.calTarget-totC,rp=sett.protTarget-totP;
+  $('r-cal').style.strokeDashoffset=C-C*Math.min(totC/targets.kcal,1);
+  $('r-prot').style.strokeDashoffset=C-C*Math.min(totP/targets.prot,1);
+  const rc=targets.kcal-totC,rp=targets.prot-totP;
   $('rem-cal').textContent=rc>0?`${rc.toLocaleString()} left`:`${Math.abs(rc).toLocaleString()} over`;
   $('rem-prot').textContent=rp>0?`${n1(rp)}g left`:'Target met ✓';
   $('rem-prot').style.color=rp<=0?'var(--green)':'var(--text2)';
-  const cp=Math.min(totC/sett.calTarget,1),pp=Math.min(totP/sett.protTarget,1);
+  const cp=Math.min(totC/targets.kcal,1),pp=Math.min(totP/targets.prot,1);
   $('bar-cal').style.width=(cp*100)+'%';$('bar-prot').style.width=(pp*100)+'%';
   $('bar-cal').style.background=cp>=1?'var(--red)':'var(--accent)';
   $('bar-prot').style.background=pp>=1?'var(--green)':'var(--accent2)';
-  $('lbl-cal').textContent=`${totC.toLocaleString()} / ${sett.calTarget.toLocaleString()} kcal`;
-  $('lbl-prot').textContent=`${n1(totP)}g / ${sett.protTarget}g`;
+  $('lbl-cal').textContent=`${totC.toLocaleString()} / ${targets.kcal.toLocaleString()} kcal`;
+  $('lbl-prot').textContent=`${n1(totP)}g / ${targets.prot}g`;
+  // Day type picker
+  $('daytype-bar').innerHTML=DAY_TYPES.map(t=>`<button class="daytype-btn${getDayType(ds)===t.id?' active':''}" onclick="pickDayType('${t.id}')">${t.label}</button>`).join('');
+  // Day RAG indicator
+  const ragEl=$('day-rag-indicator');
+  if(meals.length){const rag=getDayRAG(totC,totP,targets);ragEl.textContent=rag.emoji;ragEl.title=rag.label;}
+  else{ragEl.textContent='';}
   const list=$('today-list');list.innerHTML='';
   if(!meals.length){list.innerHTML='<div class="empty"><div class="ei">🥗</div><p>No meals logged yet.<br>Tap <strong>+</strong> to add your first meal.</p></div>';return;}
   meals.slice().reverse().forEach(m=>list.appendChild(buildRow(m)));
 }
 
+function pickDayType(id){
+  setDayType(dateKey(new Date()),id);
+  renderToday();
+}
+
 function buildRow(m){
-  const f=getFlag(m.calories,m.protein);
   const d=document.createElement('div');
   d.className='mr';d.onclick=()=>openDet(m.id);
   const photo=loadPhoto(m.photoId);
@@ -510,7 +535,6 @@ function buildRow(m){
   d.innerHTML=`${thumb}
     <div class="min"><div class="mnm">${esc(m.name)}</div>
       <div class="mmt"><span>${fmtTime(m.loggedAt)}</span>
-        <span class="flag ${f.css}" style="font-size:9px;padding:2px 7px">${f.label}</span>
         ${m.aiSuggested?'<span class="ai-badge" style="font-size:9px;padding:1px 6px">AI</span>':''}
       </div></div>
     <div class="mmr"><div class="mkc">${(Number(m.calories)||0).toLocaleString()}</div><div class="mpr">${n1(m.protein)}g P</div></div>`;
@@ -545,25 +569,33 @@ function renderInsights(period){
   const avgP=n1(dayData.reduce((s,d)=>s+d.prot,0)/dwd);
   const avgCa=n1(dayData.reduce((s,d)=>s+d.carbs,0)/dwd);
   const avgFi=n1(dayData.reduce((s,d)=>s+d.fibre,0)/dwd);
-  const gs=rangeM.filter(m=>getFlag(m.calories,m.protein).k==='green').length;
-  const as=rangeM.filter(m=>getFlag(m.calories,m.protein).k==='amber').length;
-  const rs=rangeM.filter(m=>getFlag(m.calories,m.protein).k==='red').length;
+  let gs=0,as=0,rs=0;
+  dayData.forEach(d=>{
+    if(d.cal===0)return;
+    const tgt=getDayTargets(dateKey(d.d));
+    const rag=getDayRAG(d.cal,d.prot,tgt);
+    if(rag.k==='green')gs++;else if(rag.k==='amber')as++;else rs++;
+  });
+  // Weighted avg targets across the period
+  const activeDays=dayData.filter(d=>d.cal>0);
+  const avgTgtCal=activeDays.length?Math.round(activeDays.reduce((s,d)=>s+getDayTargets(dateKey(d.d)).kcal,0)/activeDays.length):0;
+  const avgTgtProt=activeDays.length?n1(activeDays.reduce((s,d)=>s+getDayTargets(dateKey(d.d)).prot,0)/activeDays.length):0;
 
   c.innerHTML=`
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-    <div class="card" style="text-align:center"><div class="serif" style="font-size:30px;color:var(--accent)">${avgC.toLocaleString()}</div><div class="lbl" style="margin-top:4px">Avg Cal</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Target ${sett.calTarget.toLocaleString()}</div></div>
-    <div class="card" style="text-align:center"><div class="serif" style="font-size:30px;color:var(--accent2)">${avgP}g</div><div class="lbl" style="margin-top:4px">Avg Protein</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Target ${sett.protTarget}g</div></div>
+    <div class="card" style="text-align:center"><div class="serif" style="font-size:30px;color:var(--accent)">${avgC.toLocaleString()}</div><div class="lbl" style="margin-top:4px">Avg Cal</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Target ~${avgTgtCal.toLocaleString()}</div></div>
+    <div class="card" style="text-align:center"><div class="serif" style="font-size:30px;color:var(--accent2)">${avgP}g</div><div class="lbl" style="margin-top:4px">Avg Protein</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Target ~${avgTgtProt}g</div></div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
     <div class="card" style="text-align:center"><div class="serif" style="font-size:30px;color:var(--accent3)">${avgCa}g</div><div class="lbl" style="margin-top:4px">Avg Carbs</div></div>
     <div class="card" style="text-align:center"><div class="serif" style="font-size:30px;color:var(--accent4)">${avgFi}g</div><div class="lbl" style="margin-top:4px">Avg Fibre</div></div>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <div class="lbl" style="margin-bottom:10px">Mounjaro Flags — ${days} Days</div>
+    <div class="lbl" style="margin-bottom:10px">Day RAG — ${days} Days</div>
     <div style="display:flex;gap:8px">
-      <div style="flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:700;color:var(--green)">${gs}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Green</div></div>
-      <div style="flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:700;color:var(--amber)">${as}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Amber</div></div>
-      <div style="flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:700;color:var(--red)">${rs}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Red</div></div>
+      <div style="flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:700;color:var(--green)">${gs}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">🟢 On Track</div></div>
+      <div style="flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:700;color:var(--amber)">${as}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">🟡 Close</div></div>
+      <div style="flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:700;color:var(--red)">${rs}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">🔴 Off Track</div></div>
     </div>
   </div>`;
 
@@ -728,13 +760,6 @@ function renderSettings(){
     <div class="sr"><span style="font-size:15px;font-weight:500">Calorie Target</span><input class="si" id="si-cal" type="number" inputmode="numeric" value="${s.calTarget}" onchange="saveSett()"></div>
     <div class="sr"><span style="font-size:15px;font-weight:500">Protein Target (g)</span><input class="si" id="si-prot" type="number" inputmode="decimal" value="${s.protTarget}" onchange="saveSett()"></div>
   </div>
-  <div style="padding:0 0 6px"><div class="lbl" style="padding:0 4px">Mounjaro Flag Thresholds</div></div>
-  <div class="ss">
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--green)">🟢 Green — max calories</span><input class="fi" id="si-gcal" type="number" inputmode="numeric" value="${s.greenMaxCal}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--green)">🟢 Green — min protein (g)</span><input class="fi" id="si-gprot" type="number" inputmode="numeric" value="${s.greenMinProt}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--red)">🔴 Red — min calories (with low protein)</span><input class="fi" id="si-rcal" type="number" inputmode="numeric" value="${s.redMinCal}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:6px"><span style="font-size:13px;font-weight:500;color:var(--red)">🔴 Red — always red below this protein (g)</span><input class="fi" id="si-rprot" type="number" inputmode="numeric" value="${s.redMaxProt}" onchange="saveSett()" style="font-size:14px;padding:10px 12px"></div>
-  </div>
   <div class="ss">
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">AI Proxy URL</span><input class="fi" id="si-proxy" type="url" placeholder="https://your-worker.workers.dev" value="${esc(s.proxyUrl||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">App Token</span><input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
@@ -760,10 +785,6 @@ function saveSett(){
   if($('si-prot'))  s.protTarget=Number($('si-prot').value)||s.protTarget;
   if($('si-proxy')) s.proxyUrl=$('si-proxy').value.trim();
   if($('si-token')) s.appToken=$('si-token').value.trim();
-  if($('si-gcal'))  s.greenMaxCal=Number($('si-gcal').value)||s.greenMaxCal;
-  if($('si-gprot')) s.greenMinProt=Number($('si-gprot').value)||s.greenMinProt;
-  if($('si-rcal'))  s.redMinCal=Number($('si-rcal').value)||s.redMinCal;
-  if($('si-rprot')) s.redMaxProt=Number($('si-rprot').value)||s.redMaxProt;
   db.saveSett(s);toast('Settings saved');
   if(curScreen==='today')renderToday();
 }
@@ -920,15 +941,7 @@ async function triggerAI(){
   }finally{$('save-btn').disabled=false;}
 }
 
-function updateFlag(){
-  const cal=Number($('f-cal').value),prot=Number($('f-prot').value);
-  if(!cal&&!prot){$('flag-prev').style.display='none';return;}
-  const f=getFlag(cal,prot);
-  $('flag-prev').style.display='block';
-  $('flag-badge').className='flag '+f.css;
-  $('flag-badge').textContent=f.label;
-  $('flag-why').textContent=f.reason;
-}
+function updateFlag(){}
 
 function saveMeal(){
   const name=$('f-name').value.trim();
@@ -937,7 +950,6 @@ function saveMeal(){
   if(!calStr){toast('Please enter calories');return;}
   const cal=Number(calStr),prot=Number($('f-prot').value)||0;
   const carbs=Number($('f-carbs').value)||0,fibre=Number($('f-fibre').value)||0;
-  const f=getFlag(cal,prot);
   let finalPhotoId=null;
   if(photoId){
     if(photoId.startsWith('_tmp_')){
@@ -949,12 +961,12 @@ function saveMeal(){
   if(editingId){
     const old=db.meals().find(x=>x.id===editingId);
     if(old&&old.photoId&&old.photoId!==finalPhotoId)deletePhoto(old.photoId);
-    db.update(editingId,{name,calories:cal,protein:prot,carbs,fibre,category:selCat,photoId:finalPhotoId,mounjaroFlag:f.k});
+    db.update(editingId,{name,calories:cal,protein:prot,carbs,fibre,category:selCat,photoId:finalPhotoId});
     closeAdd();toast('✓ Changes saved');
   }else{
     db.add({id:genId(),name,calories:cal,protein:prot,carbs,fibre,category:selCat,
       loggedAt:new Date().toISOString(),photoId:finalPhotoId,
-      mounjaroFlag:f.k,aiSuggested:aiDone,
+      aiSuggested:aiDone,
       source:aiDone?(photoId?'photo_ai':'text_ai'):finalPhotoId?'photo_manual':'manual'});
     closeAdd();toast('✓ '+name+' saved');
   }
@@ -963,14 +975,12 @@ function saveMeal(){
 
 function openDet(id){
   const m=db.meals().find(x=>x.id===id);if(!m)return;
-  const f=getFlag(m.calories,m.protein);
   const photo=loadPhoto(m.photoId);
   $('det-body').innerHTML=`
     ${photo?`<img src="${photo}" style="width:100%;height:190px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:16px;border:1px solid var(--border)" alt="">`:''}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div><div class="serif" style="font-size:24px;line-height:1.1">${esc(m.name)}</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:5px">${fmtDate(m.loggedAt)} at ${fmtTime(m.loggedAt)}</div></div>
-      <span class="flag ${f.css}" style="flex-shrink:0;margin-left:10px">${f.label}</span>
+    <div style="margin-bottom:16px">
+      <div class="serif" style="font-size:24px;line-height:1.1">${esc(m.name)}</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:5px">${fmtDate(m.loggedAt)} at ${fmtTime(m.loggedAt)}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px">
       <div class="card" style="text-align:center;padding:12px 6px"><div class="serif" style="font-size:20px;color:var(--accent)">${(Number(m.calories)||0).toLocaleString()}</div><div class="lbl" style="margin-top:2px;font-size:9px">kcal</div></div>
@@ -981,7 +991,6 @@ function openDet(id){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
       ${m.category?`<span style="background:var(--bg3);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px">${catEmo(m.category)} ${m.category.charAt(0).toUpperCase()+m.category.slice(1)}</span>`:''}
       ${m.aiSuggested?'<span class="ai-badge">AI Analysed</span>':''}
-      <span style="background:var(--bg3);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;color:var(--text3)">${f.reason}</span>
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-s btn-sm" style="flex:1" onclick="openEdit('${m.id}')">
@@ -1006,12 +1015,13 @@ function closeSh(n){$('sh-'+n).classList.remove('open');setTimeout(()=>$('ov-'+n
 
 function exportCSV(){
   const meals=db.meals();if(!meals.length){toast('No data to export');return;}
-  const hdr='Date,Time,Meal Name,Calories,Protein (g),Carbs (g),Fibre (g),Category,Mounjaro Flag,Source\n';
+  const hdr='Date,Time,Meal Name,Calories,Protein (g),Carbs (g),Fibre (g),Category,Day Type,Source\n';
   const rows=meals.map(m=>{
     const d=new Date(m.loggedAt);
+    const dt=getDayTargets(dateKey(d));
     return[d.toLocaleDateString('en-GB'),d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
       `"${(m.name||'').replace(/"/g,'""')}"`,m.calories||0,m.protein||0,m.carbs||0,m.fibre||0,
-      m.category||'',m.mounjaroFlag||'',m.source||''].join(',');
+      m.category||'',dt.label,m.source||''].join(',');
   }).join('\n');
   dl('nutrilog-export.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows));toast('CSV exported');
 }
