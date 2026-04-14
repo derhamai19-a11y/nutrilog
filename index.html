@@ -913,7 +913,8 @@ function renderSettings(){
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">App Token</span><input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
   </div>
   <div class="ss">
-    <div class="sr" style="cursor:pointer" onclick="exportCSV()"><span style="font-size:15px;font-weight:500">Export as CSV</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+    <div class="sr" style="cursor:pointer" onclick="exportCSV()"><span style="font-size:15px;font-weight:500">Export Meals CSV</span><span style="font-size:11px;color:var(--text3);margin-left:8px">one row per meal</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" style="margin-left:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+    <div class="sr" style="cursor:pointer" onclick="exportDailySummary()"><span style="font-size:15px;font-weight:500">Export Daily Summary</span><span style="font-size:11px;color:var(--text3);margin-left:8px">one row per day</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" style="margin-left:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
     <div class="sr" style="cursor:pointer" onclick="backupData()"><span style="font-size:15px;font-weight:500">Backup Data</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
     <div class="sr" style="cursor:pointer" onclick="restoreData()"><span style="font-size:15px;font-weight:500">Restore Backup</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
   </div>
@@ -1374,15 +1375,45 @@ function closeSh(n){$('sh-'+n).classList.remove('open');setTimeout(()=>$('ov-'+n
 
 function exportCSV(){
   const meals=db.meals();if(!meals.length){toast('No data to export');return;}
-  const hdr='Date,Time,Meal Name,Calories,Protein (g),Carbs (g),Fibre (g),Category,Day Type,Source\n';
+  const hdr='Date,Time,Meal Name,Calories,Protein (g),Carbs (g),Fibre (g),Category,Day Type,Cal Target,Prot Target (g),Source\n';
   const rows=meals.map(m=>{
     const d=new Date(m.loggedAt);
-    const dt=getDayTargets(dateKey(d));
+    const dk=dateKey(d);
+    const dt=getDayTargets(dk);
     return[d.toLocaleDateString('en-GB'),d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
       `"${(m.name||'').replace(/"/g,'""')}"`,m.calories||0,m.protein||0,m.carbs||0,m.fibre||0,
-      m.category||'',dt.label,m.source||''].join(',');
+      m.category||'',dt.label,dt.kcal,dt.prot,m.source||''].join(',');
   }).join('\n');
-  dl('nutrilog-export.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows));toast('CSV exported');
+  dl('nutrilog-meals.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows));toast('Meals CSV exported');
+}
+
+function exportDailySummary(){
+  const meals=db.meals();if(!meals.length){toast('No data to export');return;}
+  // Group meals by date
+  const byDate={};
+  meals.forEach(m=>{
+    const dk=dateKey(new Date(m.loggedAt));
+    if(!byDate[dk])byDate[dk]=[];
+    byDate[dk].push(m);
+  });
+  const hdr='Date,Day Type,Cal Target,Prot Target (g),Total Cal,Total Prot (g),Total Carbs (g),Total Fibre (g),Meals Logged,Cal vs Target,Prot vs Target,RAG\n';
+  const rows=Object.keys(byDate).sort().map(dk=>{
+    const dayMeals=byDate[dk];
+    const dt=getDayTargets(dk);
+    const totC=dayMeals.reduce((s,m)=>s+(Number(m.calories)||0),0);
+    const totP=n1(dayMeals.reduce((s,m)=>s+(Number(m.protein)||0),0));
+    const totCa=n1(dayMeals.reduce((s,m)=>s+(Number(m.carbs)||0),0));
+    const totFi=n1(dayMeals.reduce((s,m)=>s+(Number(m.fibre)||0),0));
+    const rag=getDayRAG(totC,totP,dt);
+    const calDiff=totC-dt.kcal;
+    const protDiff=n1(totP-dt.prot);
+    const d=new Date(dk+'T12:00:00');
+    return[d.toLocaleDateString('en-GB'),dt.label,dt.kcal,dt.prot,
+      totC,totP,totCa,totFi,dayMeals.length,
+      (calDiff>=0?'+':'')+calDiff,(protDiff>=0?'+':'')+protDiff+'g',
+      rag.label].join(',');
+  }).join('\n');
+  dl('nutrilog-daily.csv','data:text/csv;charset=utf-8,'+encodeURIComponent(hdr+rows));toast('Daily summary exported');
 }
 function backupData(){
   const data={meals:db.meals(),settings:db.sett(),weights:db.weights(),exported:new Date().toISOString(),version:6};
