@@ -152,6 +152,11 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 .daytype-bar::-webkit-scrollbar{display:none}
 .daytype-btn{flex-shrink:0;padding:6px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
 .daytype-btn.active{background:rgba(200,240,96,.12);border-color:var(--accent);color:var(--accent)}
+/* AI validation */
+.val-btn{flex:1;padding:8px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center}
+.val-btn.active-high{background:rgba(240,112,112,.12);border-color:var(--red);color:var(--red)}
+.val-btn.active-right{background:rgba(96,240,160,.12);border-color:var(--green);color:var(--green)}
+.val-btn.active-low{background:rgba(240,184,96,.12);border-color:var(--amber);color:var(--amber)}
 </style>
 </head>
 <body>
@@ -197,7 +202,7 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
         <div class="mpill"><div class="mpill-val" id="t-meals" style="color:var(--text2)">0</div><div class="mpill-lbl">Meals</div></div>
       </div>
     </div>
-    <div class="sh-head"><span class="lbl">Today's Meals</span></div>
+    <div class="sh-head"><span class="lbl">Today's Meals</span><div id="day-feedback-btn-wrap"></div></div>
     <div id="today-list" style="padding:0 20px"></div>
   </div>
 
@@ -276,12 +281,25 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
   <div id="ai-bar" style="display:none;margin:0 20px 14px;padding:12px 14px;background:var(--bg3);border-radius:var(--r-sm);border:1px solid var(--border)">
     <div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><div style="font-size:13px;color:var(--text2)" id="ai-bar-txt">Analysing your meal…</div></div>
   </div>
-  <div id="ai-ok" style="display:none;margin:0 20px 14px;padding:10px 14px;background:rgba(96,200,240,.07);border-radius:var(--r-sm);border:1px solid rgba(96,200,240,.2)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span class="ai-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>AI Suggestion</span>
+  <div id="ai-ok" style="display:none;margin:0 20px 14px;padding:12px 14px;background:rgba(96,200,240,.07);border-radius:var(--r-sm);border:1px solid rgba(96,200,240,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span class="ai-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>AI Estimate</span>
       <span id="ai-conf" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px"></span>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Review fields below — edit anything before saving.</div>
+    <div id="ai-breakdown-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px"></div>
+    <div style="margin-bottom:10px">
+      <div class="fl" style="margin-bottom:7px">How does this look?</div>
+      <div style="display:flex;gap:6px">
+        <button class="val-btn" id="vb-high" onclick="setAIValidation('high')">Too high</button>
+        <button class="val-btn" id="vb-right" onclick="setAIValidation('right')">Looks right</button>
+        <button class="val-btn" id="vb-low" onclick="setAIValidation('low')">Too low</button>
+      </div>
+    </div>
+    <div id="ai-adj-wrap" style="display:none;margin-bottom:10px">
+      <div class="fl" style="margin-bottom:5px">What do you think calories should be?</div>
+      <input class="fi" id="ai-adj-cal" type="number" inputmode="numeric" style="font-size:15px;padding:10px 12px">
+      <div style="font-size:11px;color:var(--text3);margin-top:4px" id="ai-adj-hint"></div>
+    </div>
     <button class="btn btn-ai-re" onclick="triggerAI()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
       Refine description &amp; re-analyse
@@ -350,6 +368,35 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 <div class="ov" id="ov-det" onclick="closeDet()"></div>
 <div class="sh" id="sh-det"><div class="sh-handle"></div><div id="det-body" style="padding:0 20px 24px"></div></div>
 
+<!-- POST-MEAL FEEDBACK SHEET -->
+<div class="ov" id="ov-pmf" onclick="closeSh('pmf')"></div>
+<div class="sh" id="sh-pmf">
+  <div class="sh-handle"></div>
+  <div style="padding:0 20px 24px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:20px">✨</span>
+      <span class="serif" style="font-size:20px">Meal logged</span>
+    </div>
+    <div id="sh-pmf-body" style="min-height:48px"></div>
+    <div style="margin-top:18px">
+      <button class="btn btn-s" style="width:100%" onclick="closeSh('pmf')">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAILY FEEDBACK SHEET -->
+<div class="ov" id="ov-dayf" onclick="closeSh('dayf')"></div>
+<div class="sh" id="sh-dayf">
+  <div class="sh-handle"></div>
+  <div class="sh-title">How's my day looking?</div>
+  <div style="padding:0 20px 24px">
+    <div id="sh-dayf-body" style="min-height:60px"></div>
+    <div style="margin-top:18px">
+      <button class="btn btn-s" style="width:100%" onclick="closeSh('dayf')">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -411,7 +458,7 @@ const db={
     }
   },
   sett(){
-    const d={tdee:2000,calTarget:2000,protTarget:145,proxyUrl:'',appToken:''};
+    const d={tdee:2000,calTarget:2000,protTarget:145,proxyUrl:'',appToken:'',openaiKey:''};
     try{return{...d,...JSON.parse(localStorage.getItem(SK)||'{}')}}catch(e){return d}
   },
   saveSett(s){localStorage.setItem(SK,JSON.stringify(s))},
@@ -517,6 +564,9 @@ function renderToday(){
   const ragEl=$('day-rag-indicator');
   if(meals.length){const rag=getDayRAG(totC,totP,targets);ragEl.textContent=rag.emoji;ragEl.title=rag.label;}
   else{ragEl.textContent='';}
+  $('day-feedback-btn-wrap').innerHTML=meals.length>=2
+    ?'<button class="btn btn-s btn-sm" onclick="showDailyFeedback()" style="padding:6px 14px;font-size:12px">💬 How\'s my day?</button>'
+    :'';
   const list=$('today-list');list.innerHTML='';
   if(!meals.length){list.innerHTML='<div class="empty"><div class="ei">🥗</div><p>No meals logged yet.<br>Tap <strong>+</strong> to add your first meal.</p></div>';return;}
   meals.slice().reverse().forEach(m=>list.appendChild(buildRow(m)));
@@ -761,8 +811,9 @@ function renderSettings(){
     <div class="sr"><span style="font-size:15px;font-weight:500">Protein Target (g)</span><input class="si" id="si-prot" type="number" inputmode="decimal" value="${s.protTarget}" onchange="saveSett()"></div>
   </div>
   <div class="ss">
-    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">AI Proxy URL</span><input class="fi" id="si-proxy" type="url" placeholder="https://your-worker.workers.dev" value="${esc(s.proxyUrl||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">AI Proxy URL</span><span style="font-size:11px;color:var(--text3)">For meal photo analysis</span><input class="fi" id="si-proxy" type="url" placeholder="https://your-worker.workers.dev" value="${esc(s.proxyUrl||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">App Token</span><input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">OpenAI API Key</span><span style="font-size:11px;color:var(--text3)">For feedback features (stored locally)</span><input class="fi" id="si-oai" type="password" placeholder="sk-..." value="${esc(s.openaiKey||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
   </div>
   <div class="ss">
     <div class="sr" style="cursor:pointer" onclick="exportCSV()"><span style="font-size:15px;font-weight:500">Export as CSV</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
@@ -785,12 +836,13 @@ function saveSett(){
   if($('si-prot'))  s.protTarget=Number($('si-prot').value)||s.protTarget;
   if($('si-proxy')) s.proxyUrl=$('si-proxy').value.trim();
   if($('si-token')) s.appToken=$('si-token').value.trim();
+  if($('si-oai'))   s.openaiKey=$('si-oai').value.trim();
   db.saveSett(s);toast('Settings saved');
   if(curScreen==='today')renderToday();
 }
 
 // ── ADD / EDIT ─────────────────────────────────────────────────────
-let selCat='',photoId=null,aiDone=false,editingId=null;
+let selCat='',photoId=null,aiDone=false,editingId=null,aiEstimate=null,aiValidationFlag=null;
 
 function openAdd(){
   editingId=null;aiDone=false;photoId=null;selCat='';
@@ -802,7 +854,8 @@ function openAdd(){
   $('photo-drop').style.display='flex';$('photo-preview-wrap').style.display='none';
   $('ai-bar').style.display='none';$('ai-ok').style.display='none';
   $('ai-btn').style.display='flex';
-  $('flag-prev').style.display='none';$('save-btn').disabled=false;
+  $('save-btn').disabled=false;
+  aiEstimate=null;aiValidationFlag=null;
   document.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
   const h=new Date().getHours();
   pickCat(h<10?'breakfast':h<14?'lunch':h<19?'dinner':'snack');
@@ -926,11 +979,22 @@ async function triggerAI(){
       if(d.carbs_g)$('f-carbs').value=d.carbs_g;
       if(d.fibre_g)$('f-fibre').value=d.fibre_g;
       aiDone=true;
+      aiEstimate={calories:Number(d.calories)||0,protein:Number(d.protein_g)||0,carbs:Number(d.carbs_g)||0,fibre:Number(d.fibre_g)||0};
+      aiValidationFlag=null;
       const cm={high:'High confidence',medium:'Medium confidence',low:'Low — double-check'};
       const cc={high:'cd cd-h',medium:'cd cd-m',low:'cd cd-l'};
       $('ai-conf').innerHTML=`<span class="${cc[d.confidence]||'cd cd-m'}"></span>${cm[d.confidence]||''}`;
+      // Populate breakdown grid
+      $('ai-breakdown-grid').innerHTML=[
+        {v:aiEstimate.calories,u:'kcal',c:'var(--accent)'},
+        {v:aiEstimate.protein+'g',u:'protein',c:'var(--accent2)'},
+        {v:aiEstimate.carbs+'g',u:'carbs',c:'var(--accent3)'},
+        {v:aiEstimate.fibre+'g',u:'fibre',c:'var(--accent4)'}
+      ].map(x=>`<div style="background:var(--bg3);border-radius:8px;padding:8px 4px;text-align:center"><div style="font-size:16px;font-weight:700;color:${x.c}">${x.v}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">${x.u}</div></div>`).join('');
+      // Reset validation buttons
+      ['high','right','low'].forEach(f=>{const b=$('vb-'+f);if(b)b.className='val-btn';});
+      $('ai-adj-wrap').style.display='none';
       $('ai-bar').style.display='none';$('ai-ok').style.display='block';
-      updateFlag();
     }else{
       $('ai-bar').style.display='none';$('ai-btn').style.display='flex';
       toast('AI couldn\'t identify — enter manually');
@@ -942,6 +1006,69 @@ async function triggerAI(){
 }
 
 function updateFlag(){}
+
+function setAIValidation(flag){
+  aiValidationFlag=flag;
+  ['high','right','low'].forEach(f=>{const b=$('vb-'+f);if(b)b.className='val-btn'+(f===flag?' active-'+f:'');});
+  const adjWrap=$('ai-adj-wrap');
+  if((flag==='high'||flag==='low')&&aiEstimate){
+    adjWrap.style.display='block';
+    const suggested=flag==='high'?Math.round(aiEstimate.calories*0.8):Math.round(aiEstimate.calories*1.2);
+    $('ai-adj-cal').value=suggested;
+    $('ai-adj-hint').textContent=`AI estimated ${aiEstimate.calories} kcal — ${flag==='high'?'−20%':'+20%'} suggestion: ${suggested}`;
+  }else{
+    adjWrap.style.display='none';
+  }
+}
+
+async function callOpenAI(messages,maxTokens=400){
+  const sett=db.sett();
+  const key=(sett.openaiKey||'').trim();
+  if(!key){toast('⚠️ Add your OpenAI API key in Settings');return null;}
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:'gpt-4o-mini',messages,max_tokens:maxTokens})
+  });
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const data=await r.json();
+  return data.choices?.[0]?.message?.content||'';
+}
+
+async function showPostMealFeedback(meal,todayMeals,targets,dayTypeLabel){
+  $('sh-pmf-body').innerHTML='<div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><span style="font-size:13px;color:var(--text2)">Getting feedback…</span></div>';
+  openSh('pmf');
+  try{
+    const totC=todayMeals.reduce((s,m)=>s+(Number(m.calories)||0),0);
+    const totP=todayMeals.reduce((s,m)=>s+(Number(m.protein)||0),0);
+    const mealList=todayMeals.map(m=>`${m.name}: ${m.calories}kcal, ${n1(m.protein)}g protein`).join('\n');
+    const pctCal=Math.round(totC/targets.kcal*100),pctProt=Math.round(totP/targets.prot*100);
+    const msg=`You're a friendly nutrition coach. The user just logged "${meal.name}" (${meal.calories}kcal, ${n1(meal.protein)}g protein, ${n1(meal.carbs)}g carbs, ${n1(meal.fibre)}g fibre) on a ${dayTypeLabel}. Targets: ${targets.kcal}kcal, ${targets.prot}g protein.\n\nAll meals today:\n${mealList}\n\nRunning total: ${totC}kcal (${pctCal}% of target), ${totP}g protein (${pctProt}% of target).\n\nWrite 2-3 sentences: acknowledge what was logged, comment on how it fits the day so far (e.g. "Good protein hit — you're 60% to your Push Day target"), flag one thing to be mindful of (high carbs, low fibre, etc). No bullet points. Be concise and encouraging.`;
+    const text=await callOpenAI([{role:'user',content:msg}],200);
+    if(text)$('sh-pmf-body').innerHTML=`<p style="font-size:14px;line-height:1.7;color:var(--text)">${esc(text)}</p>`;
+    else closeSh('pmf');
+  }catch(e){closeSh('pmf');}
+}
+
+async function showDailyFeedback(){
+  const ds=dateKey(new Date());
+  const targets=getDayTargets(ds);
+  const dayTypeLabel=DAY_TYPES.find(t=>t.id===getDayType(ds))?.label||'Rest Day';
+  const todayMeals=db.meals().filter(m=>new Date(m.loggedAt).toDateString()===todayStr());
+  $('sh-dayf-body').innerHTML='<div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><span style="font-size:13px;color:var(--text2)">Analysing your day…</span></div>';
+  openSh('dayf');
+  try{
+    const h=new Date().getHours();
+    const timeOfDay=h<12?'morning':h<17?'afternoon':'evening';
+    const totC=todayMeals.reduce((s,m)=>s+(Number(m.calories)||0),0);
+    const totP=todayMeals.reduce((s,m)=>s+(Number(m.protein)||0),0);
+    const mealList=todayMeals.map(m=>`- ${m.name}: ${m.calories}kcal, ${n1(m.protein)}g P, ${n1(m.carbs)}g C, ${n1(m.fibre)}g F`).join('\n');
+    const msg=`You're a nutrition coach reviewing someone's ${timeOfDay}. Day type: ${dayTypeLabel}. Targets: ${targets.kcal}kcal, ${targets.prot}g protein.\n\nMeals today:\n${mealList}\n\nTotal: ${totC}kcal, ${totP}g protein.\n\nWrite a short paragraph (3-4 sentences): what's gone well today, what to watch for the rest of the day, and a practical suggestion for the next meal. Be specific, friendly, and direct. No bullet points.`;
+    const text=await callOpenAI([{role:'user',content:msg}],300);
+    if(text)$('sh-dayf-body').innerHTML=`<p style="font-size:14px;line-height:1.7;color:var(--text)">${esc(text)}</p>`;
+    else{closeSh('dayf');toast('Could not get feedback');}
+  }catch(e){closeSh('dayf');toast('AI unavailable');}
+}
 
 function saveMeal(){
   const name=$('f-name').value.trim();
@@ -964,11 +1091,18 @@ function saveMeal(){
     db.update(editingId,{name,calories:cal,protein:prot,carbs,fibre,category:selCat,photoId:finalPhotoId});
     closeAdd();toast('✓ Changes saved');
   }else{
+    const validExtra=aiValidationFlag?{aiValidation:aiValidationFlag,aiOriginalCal:aiEstimate?.calories,aiAdjustedCal:aiValidationFlag!=='right'?(Number($('ai-adj-cal').value)||null):null}:{};
     db.add({id:genId(),name,calories:cal,protein:prot,carbs,fibre,category:selCat,
       loggedAt:new Date().toISOString(),photoId:finalPhotoId,
-      aiSuggested:aiDone,
+      aiSuggested:aiDone,...validExtra,
       source:aiDone?(photoId?'photo_ai':'text_ai'):finalPhotoId?'photo_manual':'manual'});
+    const savedMeal={name,calories:cal,protein:prot,carbs,fibre};
+    const todayMealsNow=db.meals().filter(m=>new Date(m.loggedAt).toDateString()===todayStr());
+    const ds=dateKey(new Date());
+    const tgts=getDayTargets(ds);
+    const dtLabel=DAY_TYPES.find(t=>t.id===getDayType(ds))?.label||'Rest Day';
     closeAdd();toast('✓ '+name+' saved');
+    setTimeout(()=>showPostMealFeedback(savedMeal,todayMealsNow,tgts,dtLabel),450);
   }
   if(curScreen==='today')renderToday();
 }
