@@ -96,7 +96,7 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 .ss{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
 .sr{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border)}
 .sr:last-child{border-bottom:none}
-.si{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;text-align:right;width:96px;outline:none;-webkit-appearance:none}
+.si{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;text-align:right;width:96px;outline:none;-webkit-appearance:none;appearance:none}
 .si:focus{border-color:var(--accent)}
 .chart-wrap{display:flex;align-items:flex-end;gap:4px;height:80px;padding:0 2px}
 .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
@@ -244,6 +244,7 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
     </button>
   </nav>
+  <div style="position:fixed;bottom:calc(60px + var(--sb) + 8px);left:0;width:100%;text-align:center;font-size:11px;color:var(--text3);pointer-events:none">NutriLog v6.1</div>
 </div>
 
 <!-- ADD / EDIT SHEET -->
@@ -457,7 +458,7 @@ function loadPhoto(id){if(!id)return null;try{return localStorage.getItem(PHOTO_
 function deletePhoto(id){if(id)try{localStorage.removeItem(PHOTO_PREFIX+id);}catch(e){}}
 
 // ── STORAGE ───────────────────────────────────────────────────────
-const MK=CURRENT_MEALS_KEY, SK=CURRENT_SETT_KEY, WK='nl_weight_v1';
+const MK=CURRENT_MEALS_KEY, SK=CURRENT_SETT_KEY, WK='nl_weight_v1', ERROR_LOG_KEY='nl_ai_errors_v1';
 const db={
   meals(){try{return JSON.parse(localStorage.getItem(MK)||'[]')}catch(e){return[]}},
   save(m){
@@ -479,6 +480,9 @@ const db={
   saveWeights(w){localStorage.setItem(WK,JSON.stringify(w))},
   addWeight(entry){const a=db.weights();a.push(entry);db.saveWeights(a);},
   delWeight(id){db.saveWeights(db.weights().filter(w=>w.id!==id));},
+  errors(){try{return JSON.parse(localStorage.getItem(ERROR_LOG_KEY)||'[]')}catch(e){return[]}},
+  saveErrors(e){localStorage.setItem(ERROR_LOG_KEY,JSON.stringify(e))},
+  addError(entry){const a=db.errors();a.unshift(entry);if(a.length>30)a.length=30;db.saveErrors(a);},
   add(m){const a=db.meals();a.push(m);db.save(a)},
   update(id,ch){const a=db.meals();const i=a.findIndex(m=>m.id===id);if(i>=0){a[i]={...a[i],...ch};db.save(a)}},
   del(id){
@@ -500,6 +504,9 @@ const n1=v=>Math.round((Number(v)||0)*10)/10;
 function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
 
 const CAT_COLORS={breakfast:'var(--accent3)',lunch:'var(--accent)',dinner:'var(--accent2)',snack:'var(--accent4)'};
+
+// App version. When updating code in future, bump this version string.
+const APP_VERSION='v6.1';
 
 // ── DAY TYPES ─────────────────────────────────────────────────────
 const DAY_TYPES=[
@@ -542,6 +549,103 @@ function getBreaks(){try{return JSON.parse(localStorage.getItem(BREAKS_KEY)||'[]
 function saveBreaks(b){localStorage.setItem(BREAKS_KEY,JSON.stringify(b))}
 
 function toast(msg,dur=2400){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur)}
+
+function copyTextToClipboard(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  const textarea=document.createElement('textarea');
+  textarea.value=text;
+  textarea.style.position='fixed';textarea.style.left='-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try{document.execCommand('copy');document.body.removeChild(textarea);return Promise.resolve();}
+  catch(e){document.body.removeChild(textarea);return Promise.reject(e);}
+}
+
+function formatErrorEntryText(e){
+  const mode = e.context?.mode || 'AI meal analysis';
+  const hint = e.context?.hint ? `Hint: ${e.context.hint}` : 'No text hint provided';
+  const photo = e.context?.hasPhoto ? 'Photo attached' : 'No photo attached';
+  const proxy = e.context?.proxyUrl ? `Proxy URL: ${e.context.proxyUrl}` : 'Proxy URL not set or hidden';
+  const details = e.details ? `Details: ${e.details}` : 'No additional details available';
+  return [`Time: ${new Date(e.at).toLocaleString('en-GB')}`,
+    `Action: AI meal analysis`,
+    `Mode: ${mode}`,
+    photo,
+    hint,
+    proxy,
+    `Error: ${e.message}`,
+    details,
+    `App version: ${APP_VERSION}`].join('\n');
+}
+
+function logAIError(message, meta={}){
+  try{
+    db.addError({
+      id:genId(),
+      at:new Date().toISOString(),
+      message:String(message),
+      details:meta.details||null,
+      context:{
+        mode: meta.photo && meta.hint ? 'photo + hint' : meta.photo ? 'photo only' : meta.hint ? 'text only' : 'unknown',
+        hint: meta.hint || null,
+        hasPhoto: !!meta.photo,
+        proxyUrl: meta.proxyUrl || null
+      }
+    });
+  }catch(e){console.warn('Could not save AI error',e);}
+}
+
+function renderErrorLog(){
+  const el=$('error-log-content');
+  if(!el)return;
+  const errors=db.errors();
+  if(!errors.length){
+    el.innerHTML='<div class="empty" style="padding:14px 0;background:transparent;border:none;color:var(--text2);">No AI errors logged yet.</div>';
+    return;
+  }
+  const rows = errors.slice(0,10).map(e=>{
+    const msg=String(e.message||'Unknown error');
+    const safeMsg=msg.length>220?esc(msg.slice(0,220))+'...':esc(msg);
+    const mode = e.context?.mode || 'AI meal analysis';
+    const hint = e.context?.hint ? `Hint: ${esc(String(e.context.hint))}` : 'Hint: none';
+    const photo = e.context?.hasPhoto ? 'Photo attached' : 'No photo attached';
+    const proxy = e.context?.proxyUrl ? `Proxy: ${esc(String(e.context.proxyUrl))}` : 'Proxy: not set';
+    const details = e.details ? esc(String(e.details)) : 'No additional details';
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600">AI error</div>
+        <div style="font-size:10px;color:var(--text3)">${new Date(e.at).toLocaleString('en-GB')}</div>
+      </div>
+      <div style="font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;margin-bottom:10px">${safeMsg}</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;white-space:pre-line;margin-bottom:10px">Action: ${mode}\n${photo}\n${hint}\n${proxy}</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;white-space:pre-line;margin-bottom:12px">Details: ${details}</div>
+      <button class="btn btn-sm btn-s" style="padding:8px 10px" onclick="copyErrorLogEntry('${e.id}')">Copy this error</button>
+    </div>`;
+  }).join('');
+  el.innerHTML=rows;
+}
+
+function copyErrorLogEntry(id){
+  const entry = db.errors().find(e=>e.id===id);
+  if(!entry){toast('Error entry not found');return;}
+  copyTextToClipboard(formatErrorEntryText(entry)).then(()=>toast('Error copied to clipboard')).catch(()=>toast('Copy failed'));
+}
+
+function copyFullErrorLog(){
+  const errors=db.errors();
+  if(!errors.length){toast('No errors to copy');return;}
+  const text = errors.slice(0,10).map(formatErrorEntryText).join('\n\n---\n\n');
+  copyTextToClipboard(text).then(()=>toast('Full error log copied')).catch(()=>toast('Copy failed'));
+}
+
+function clearErrorLog(){
+  if(!confirm('Clear the AI error log?'))return;
+  db.saveErrors([]);
+  renderErrorLog();
+  toast('AI error log cleared');
+}
 
 // ── NAVIGATION ────────────────────────────────────────────────────
 let curScreen='today',curInsights='weekly';
@@ -914,6 +1018,18 @@ function renderSettings(){
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">App Token</span><input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
   </div>
   <div class="ss">
+    <div class="sr" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <div><span style="font-size:15px;font-weight:500">AI Error Log</span><div style="font-size:11px;color:var(--text3);margin-top:4px">Recent AI failures are saved here for troubleshooting.</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm btn-s" style="padding:8px 10px" onclick="copyFullErrorLog()">Copy full log</button>
+          <button class="btn btn-sm btn-s" style="padding:8px 10px" onclick="clearErrorLog()">Clear</button>
+        </div>
+      </div>
+      <div id="error-log-content" style="width:100%;margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="ss">
     <div class="sr" style="cursor:pointer" onclick="exportCSV()"><span style="font-size:15px;font-weight:500">Export Meals CSV</span><span style="font-size:11px;color:var(--text3);margin-left:8px">one row per meal</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" style="margin-left:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
     <div class="sr" style="cursor:pointer" onclick="exportDailySummary()"><span style="font-size:15px;font-weight:500">Export Daily Summary</span><span style="font-size:11px;color:var(--text3);margin-left:8px">one row per day</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" style="margin-left:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
     <div class="sr" style="cursor:pointer" onclick="backupData()"><span style="font-size:15px;font-weight:500">Backup Data</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
@@ -923,9 +1039,10 @@ function renderSettings(){
     <div class="sr" style="cursor:pointer" onclick="clearData()"><span style="color:var(--red);font-size:15px;font-weight:500">Delete All Data</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
   </div>
   <div style="text-align:center;padding:22px 0 8px">
-    <div style="font-size:12px;color:var(--text3)">NutriLog v6 · All data stored on your device</div>
+    <div style="font-size:12px;color:var(--text3)">NutriLog ${APP_VERSION} · All data stored on your device</div>
     <div style="font-size:11px;color:var(--text3);margin-top:3px">No account · No tracking · No ads</div>
   </div>`;
+  renderErrorLog();
 }
 
 function saveSett(){
@@ -1069,9 +1186,18 @@ async function triggerAI(){
     if(photoId){const p=loadPhoto(photoId);if(p)body.image_b64=p.split(',')[1];}
     if(hint)body.hint=hint;
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-App-Token':token},body:JSON.stringify(body)});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    if(d.ok&&d.meal_name){
+    let d;
+    if(!r.ok){
+      let errText='';
+      try{errText=await r.text();}catch(_){errText=r.statusText||String(r.status);}      
+      throw new Error(`HTTP ${r.status}: ${errText}`);
+    }
+    d=await r.json();
+    if(!d.ok){
+      const detail=d.error||d.error_details||'Unexpected AI response';
+      throw new Error(detail);
+    }
+    if(d.meal_name){
       $('f-name').value=d.meal_name;
       $('f-cal').value=d.calories||'';$('f-prot').value=d.protein_g||'';
       if(d.carbs_g)$('f-carbs').value=d.carbs_g;
@@ -1082,24 +1208,24 @@ async function triggerAI(){
       const cm={high:'High confidence',medium:'Medium confidence',low:'Low — double-check'};
       const cc={high:'cd cd-h',medium:'cd cd-m',low:'cd cd-l'};
       $('ai-conf').innerHTML=`<span class="${cc[d.confidence]||'cd cd-m'}"></span>${cm[d.confidence]||''}`;
-      // Populate breakdown grid
       $('ai-breakdown-grid').innerHTML=[
         {v:aiEstimate.calories,u:'kcal',c:'var(--accent)'},
         {v:aiEstimate.protein+'g',u:'protein',c:'var(--accent2)'},
         {v:aiEstimate.carbs+'g',u:'carbs',c:'var(--accent3)'},
         {v:aiEstimate.fibre+'g',u:'fibre',c:'var(--accent4)'}
       ].map(x=>`<div style="background:var(--bg3);border-radius:8px;padding:8px 4px;text-align:center"><div style="font-size:16px;font-weight:700;color:${x.c}">${x.v}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">${x.u}</div></div>`).join('');
-      // Reset validation buttons
       ['high','right','low'].forEach(f=>{const b=$('vb-'+f);if(b)b.className='val-btn';});
       $('ai-adj-wrap').style.display='none';
       $('ai-bar').style.display='none';$('ai-ok').style.display='block';
     }else{
-      $('ai-bar').style.display='none';$('ai-btn').style.display='flex';
-      toast('AI couldn\'t identify — enter manually');
+      throw new Error('AI returned no meal estimate');
     }
   }catch(err){
+    const msg=err?.message||String(err);
+    logAIError(msg,{hint,photo:!!photoId});
     $('ai-bar').style.display='none';$('ai-btn').style.display='flex';
-    toast('AI unavailable — enter details manually');
+    const display=msg.length>100?msg.slice(0,100)+'...':msg;
+    toast('AI error: '+display);
   }finally{$('save-btn').disabled=false;}
 }
 
