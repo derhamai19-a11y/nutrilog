@@ -51,7 +51,7 @@ body{font-family:'DM Sans',sans-serif;background:#0a0a0f;color:#f0ece4;min-heigh
 .mth{width:42px;height:42px;border-radius:8px;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden}
 .mth img{width:100%;height:100%;object-fit:cover}
 .min{flex:1;min-width:0}
-.mnm{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mnm{font-weight:500;font-size:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 .mmt{font-size:11px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:6px}
 .mmr{text-align:right;flex-shrink:0}
 .mkc{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -519,9 +519,19 @@ const DAY_TYPES=[
   {id:'rest',   label:'Rest Day',       kcal:1700,prot:130},
 ];
 function dateKey(d){const dt=d instanceof Date?d:new Date(d);return dt.toISOString().slice(0,10);}
+
+const DT_CUSTOM_KEY='nl_custom_dt_v1';
+function getDTCustom(){try{return JSON.parse(localStorage.getItem(DT_CUSTOM_KEY)||'[]')}catch(e){return[]}}
+function saveDTCustom(a){localStorage.setItem(DT_CUSTOM_KEY,JSON.stringify(a))}
+function getAllDayTypes(){const c=getDTCustom();const ci=new Set(c.map(t=>t.id));return[...DAY_TYPES.filter(t=>!ci.has(t.id)),...c]}
+function isDTBuiltIn(id){return DAY_TYPES.some(t=>t.id===id)}
+
+function getDaySnapshot(ds){try{return JSON.parse(localStorage.getItem('nl_day_snap_'+ds))}catch(e){return null}}
+function setDaySnapshot(ds,kcal,prot){localStorage.setItem('nl_day_snap_'+ds,JSON.stringify({kcal,prot}))}
+
 function getDayType(ds){return localStorage.getItem('nl_daytype_'+ds)||'rest';}
-function setDayType(ds,id){localStorage.setItem('nl_daytype_'+ds,id);}
-function getDayTargets(ds){return DAY_TYPES.find(t=>t.id===getDayType(ds))||DAY_TYPES[5];}
+function setDayType(ds,id){localStorage.setItem('nl_daytype_'+ds,id);const t=getAllDayTypes().find(x=>x.id===id);if(t)setDaySnapshot(ds,t.kcal,t.prot);}
+function getDayTargets(ds){const today=dateKey(new Date());if(ds!==today){const s=getDaySnapshot(ds);if(s)return s;}return getAllDayTypes().find(t=>t.id===getDayType(ds))||{kcal:1700,prot:130};}
 
 function getDayRAG(totC,totP,targets){
   const ct=targets.kcal,pt=targets.prot;
@@ -695,7 +705,7 @@ function renderToday(){
   $('lbl-cal').textContent=`${totC.toLocaleString()} / ${targets.kcal.toLocaleString()} kcal`;
   $('lbl-prot').textContent=`${n1(totP)}g / ${targets.prot}g`;
   // Day type picker
-  $('daytype-bar').innerHTML=DAY_TYPES.map(t=>`<button class="daytype-btn${getDayType(ds)===t.id?' active':''}" onclick="pickDayType('${t.id}')">${t.label}</button>`).join('');
+  $('daytype-bar').innerHTML=getAllDayTypes().map(t=>`<button class="daytype-btn${getDayType(ds)===t.id?' active':''}" onclick="pickDayType('${esc(t.id)}')">${esc(t.label)}</button>`).join('');
   // Day RAG indicator
   const ragEl=$('day-rag-indicator');
   if(meals.length){const rag=getDayRAG(totC,totP,targets);ragEl.textContent=rag.emoji;ragEl.title=rag.label;}
@@ -1005,14 +1015,114 @@ function delWeight(id){
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────
+let _dtEditId=null,_dtEditMode=null;
+
+function renderDayTypesSettings(){
+  const el=$('ss-daytypes');if(!el)return;
+  const custom=getDTCustom();
+  const customIds=new Set(custom.map(t=>t.id));
+  const all=getAllDayTypes();
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:15px;font-weight:500">Day Types</span>
+    <button class="btn btn-sm" onclick="openAddDayType()" style="padding:6px 14px;font-size:12px">+ Add</button>
+  </div>
+  ${all.map(t=>{
+    const isOverride=customIds.has(t.id)&&isDTBuiltIn(t.id);
+    const isCustomOnly=customIds.has(t.id)&&!isDTBuiltIn(t.id);
+    return `<div class="sr" style="padding:9px 0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${esc(t.label)}</div>
+        <div style="font-size:11px;color:var(--text3)">${t.kcal} kcal · ${t.prot}g protein</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-sm btn-s" onclick="openEditDayType('${esc(t.id)}')" style="padding:5px 10px;font-size:11px">Edit</button>
+        ${isOverride?`<button class="btn btn-sm btn-s" onclick="resetDayType('${esc(t.id)}')" style="padding:5px 10px;font-size:11px">Reset</button>`:''}
+        ${isCustomOnly?`<button class="btn btn-sm btn-s" onclick="deleteDayType('${esc(t.id)}')" style="padding:5px 10px;font-size:11px;color:var(--red);border-color:var(--red)">Del</button>`:''}
+      </div>
+    </div>`;
+  }).join('')}
+  <div id="dt-edit-form" style="display:none;margin-top:10px;background:var(--bg3);border-radius:var(--r-sm);padding:14px"></div>`;
+  if(_dtEditId!==null||_dtEditMode==='add')_showDtForm();
+}
+
+function _showDtForm(){
+  const form=$('dt-edit-form');if(!form)return;
+  if(_dtEditMode==='add'){
+    form.style.display='block';
+    form.innerHTML=`<div style="font-size:13px;font-weight:600;margin-bottom:10px">New Day Type</div>
+    <div class="sr" style="padding:6px 0"><span style="font-size:13px;flex:1">Name</span><input class="si" id="dte-lbl" type="text" placeholder="e.g. Leg Day" style="max-width:150px"></div>
+    <div class="sr" style="padding:6px 0"><span style="font-size:13px;flex:1">Calories</span><input class="si" id="dte-kcal" type="number" inputmode="numeric" placeholder="2000" style="max-width:90px"></div>
+    <div class="sr" style="padding:6px 0"><span style="font-size:13px;flex:1">Protein (g)</span><input class="si" id="dte-prot" type="number" inputmode="decimal" placeholder="150" style="max-width:90px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-sm" onclick="saveNewDayType()" style="flex:1;padding:10px">Add</button>
+      <button class="btn btn-sm btn-s" onclick="cancelDtEdit()" style="padding:10px 14px">Cancel</button>
+    </div>`;
+  } else {
+    const t=getAllDayTypes().find(x=>x.id===_dtEditId);if(!t)return;
+    form.style.display='block';
+    form.innerHTML=`<div style="font-size:13px;font-weight:600;margin-bottom:10px">Edit: ${esc(t.label)}</div>
+    <div class="sr" style="padding:6px 0"><span style="font-size:13px;flex:1">Name</span><input class="si" id="dte-lbl" type="text" value="${esc(t.label)}" style="max-width:150px"></div>
+    <div class="sr" style="padding:6px 0"><span style="font-size:13px;flex:1">Calories</span><input class="si" id="dte-kcal" type="number" inputmode="numeric" value="${t.kcal}" style="max-width:90px"></div>
+    <div class="sr" style="padding:6px 0"><span style="font-size:13px;flex:1">Protein (g)</span><input class="si" id="dte-prot" type="number" inputmode="decimal" value="${t.prot}" style="max-width:90px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-sm" onclick="saveEditDayType()" style="flex:1;padding:10px">Save</button>
+      <button class="btn btn-sm btn-s" onclick="cancelDtEdit()" style="padding:10px 14px">Cancel</button>
+    </div>`;
+  }
+  form.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function openEditDayType(id){_dtEditId=id;_dtEditMode='edit';renderDayTypesSettings();}
+function openAddDayType(){_dtEditId=null;_dtEditMode='add';renderDayTypesSettings();}
+function cancelDtEdit(){_dtEditId=null;_dtEditMode=null;if($('dt-edit-form'))$('dt-edit-form').style.display='none';}
+
+function saveEditDayType(){
+  const lbl=($('dte-lbl').value||'').trim();
+  const kcal=Number($('dte-kcal').value);
+  const prot=Number($('dte-prot').value);
+  if(!lbl||!kcal||!prot){toast('Fill all fields');return;}
+  const custom=getDTCustom();
+  const idx=custom.findIndex(t=>t.id===_dtEditId);
+  if(idx>=0)custom[idx]={...custom[idx],label:lbl,kcal,prot};
+  else custom.push({id:_dtEditId,label:lbl,kcal,prot});
+  saveDTCustom(custom);_dtEditId=null;_dtEditMode=null;
+  renderDayTypesSettings();toast('Day type updated');
+  if(curScreen==='today')renderToday();
+}
+
+function saveNewDayType(){
+  const lbl=($('dte-lbl').value||'').trim();
+  const kcal=Number($('dte-kcal').value);
+  const prot=Number($('dte-prot').value);
+  if(!lbl||!kcal||!prot){toast('Fill all fields');return;}
+  const id='ct_'+lbl.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,16)+'_'+Date.now().toString(36);
+  const custom=getDTCustom();custom.push({id,label:lbl,kcal,prot});
+  saveDTCustom(custom);_dtEditId=null;_dtEditMode=null;
+  renderDayTypesSettings();toast('Day type added');
+  if(curScreen==='today')renderToday();
+}
+
+function deleteDayType(id){
+  if(!confirm('Delete this day type?'))return;
+  saveDTCustom(getDTCustom().filter(t=>t.id!==id));
+  renderDayTypesSettings();toast('Deleted');
+  if(curScreen==='today')renderToday();
+}
+
+function resetDayType(id){
+  saveDTCustom(getDTCustom().filter(t=>t.id!==id));
+  renderDayTypesSettings();toast('Reset to default');
+  if(curScreen==='today')renderToday();
+}
+
 function renderSettings(){
   const s=db.sett();
   $('settings-c').innerHTML=`
   <div class="ss">
     <div class="sr"><span style="font-size:15px;font-weight:500">TDEE (kcal/day)</span><input class="si" id="si-tdee" type="number" inputmode="numeric" value="${s.tdee}" onchange="saveSett()"></div>
-    <div class="sr"><span style="font-size:15px;font-weight:500">Calorie Target</span><input class="si" id="si-cal" type="number" inputmode="numeric" value="${s.calTarget}" onchange="saveSett()"></div>
-    <div class="sr"><span style="font-size:15px;font-weight:500">Protein Target (g)</span><input class="si" id="si-prot" type="number" inputmode="decimal" value="${s.protTarget}" onchange="saveSett()"></div>
   </div>
+  <div class="ss" id="ss-daytypes"></div>
   <div class="ss">
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">AI Proxy URL</span><span style="font-size:11px;color:var(--text3)">For meal photo analysis</span><input class="fi" id="si-proxy" type="url" placeholder="https://your-worker.workers.dev" value="${esc(s.proxyUrl||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
     <div class="sr" style="flex-direction:column;align-items:flex-start;gap:8px"><span style="font-size:15px;font-weight:500">App Token</span><input class="fi" id="si-token" type="password" placeholder="Your secret token" value="${esc(s.appToken||'')}" onchange="saveSett()" style="font-size:13px;padding:10px 12px"></div>
@@ -1042,6 +1152,7 @@ function renderSettings(){
     <div style="font-size:12px;color:var(--text3)">NutriLog ${APP_VERSION} · All data stored on your device</div>
     <div style="font-size:11px;color:var(--text3);margin-top:3px">No account · No tracking · No ads</div>
   </div>`;
+  renderDayTypesSettings();
   renderErrorLog();
 }
 
@@ -1278,7 +1389,7 @@ async function showPostMealFeedback(meal,todayMeals,targets,dayTypeLabel){
 async function showDailyFeedback(){
   const ds=dateKey(new Date());
   const targets=getDayTargets(ds);
-  const dayTypeLabel=DAY_TYPES.find(t=>t.id===getDayType(ds))?.label||'Rest Day';
+  const dayTypeLabel=getAllDayTypes().find(t=>t.id===getDayType(ds))?.label||'Rest Day';
   const todayMeals=db.meals().filter(m=>new Date(m.loggedAt).toDateString()===todayStr());
   $('sh-dayf-body').innerHTML='<div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><span style="font-size:13px;color:var(--text2)">Analysing your day…</span></div>';
   openSh('dayf');
@@ -1452,8 +1563,9 @@ function saveMeal(){
     const savedMeal={name,calories:cal,protein:prot,carbs,fibre};
     const todayMealsNow=db.meals().filter(m=>new Date(m.loggedAt).toDateString()===todayStr());
     const ds=dateKey(new Date());
+    if(!getDaySnapshot(ds)){const t=getAllDayTypes().find(x=>x.id===getDayType(ds));if(t)setDaySnapshot(ds,t.kcal,t.prot);}
     const tgts=getDayTargets(ds);
-    const dtLabel=DAY_TYPES.find(t=>t.id===getDayType(ds))?.label||'Rest Day';
+    const dtLabel=getAllDayTypes().find(t=>t.id===getDayType(ds))?.label||'Rest Day';
     closeAdd();toast('✓ '+name+' saved');
     setTimeout(()=>showPostMealFeedback(savedMeal,todayMealsNow,tgts,dtLabel),450);
   }
